@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario de Actividades</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .highlight { background-color: #fbbf24; color: white; }
         .header-day { background-color: #2563EB; color: white; }
@@ -37,6 +38,66 @@
         .stat-normal { background-color: #f97316; }
         .stat-bad { background-color: #ef4444; }
         .stat-sport { background-color: #2563eb; }
+
+        /* Estilo de los deportes añadidos */
+        .sport-badge {
+            background-color: #2563EB;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-right: 5px;
+            margin-top: 5px;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        /* Estilo para el selector de deportes */
+        .sport-selector {
+            background-color: #ffffff;
+            border: 1px solid #2563EB;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            appearance: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .sport-selector:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .sport-selector:focus {
+            outline: none;
+            border-color: #2563EB;
+        }
+
+        /* Media Query para dispositivos móviles */
+        @media (max-width: 768px) {
+            #calendar-view {
+                display: block;
+            }
+
+            #calendar-days {
+                display: block;
+            }
+
+            .header-day {
+                display: none; /* Ocultar los encabezados de los días de la semana */
+            }
+
+            #calendar .header-day {
+                display: block; /* Hacer que los días se muestren verticalmente */
+            }
+            
+            #calendar-days > div {
+                display: flex;
+                flex-direction: column;
+                margin-bottom: 10px;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -85,7 +146,7 @@
     let data = JSON.parse(localStorage.getItem('calendarData')) || {};
     let currentView = 'calendar';
     const sportsList = ["Padel", "Tenis", "Boxeo", "Futbol", "Comba"];
-
+    
     function saveData() {
         localStorage.setItem('calendarData', JSON.stringify(data));
     }
@@ -109,7 +170,7 @@
             let dayNumber = i - firstDay + 1;
 
             if (dayNumber > 0 && dayNumber <= lastDate) {
-                let dateKey = `${year}-${month + 1}-${dayNumber}`;
+                let dateKey = getDateKey(year, month + 1, dayNumber);
                 let isToday = (new Date()).toDateString() === new Date(year, month, dayNumber).toDateString();
                 let checkedData = data[dateKey] || {};
 
@@ -128,155 +189,164 @@
                                 <option ${checkedData.food === 'Normal' ? 'selected' : ''} value="Normal">Normal</option>
                                 <option ${checkedData.food === 'Mal' ? 'selected' : ''} value="Mal">Mal</option>
                             </select>
-                            <select onchange="addSport(${dayNumber}, this)" class="w-full border rounded mt-1">
-                                <option value="">Añadir Deporte</option>
+                            <select class="sport-selector" onchange="addSport(${dayNumber}, this)">
+                                <option value="">Añadir deporte</option>
                                 ${sportsList.map(sport => `<option value="${sport}">${sport}</option>`).join('')}
                             </select>
-                            ${renderSports(checkedData.sports || [], dayNumber)}
+                            ${checkedData.sports ? renderSports(checkedData.sports, dayNumber) : ''}
                         </div>
                     </div>
                 `;
             } else {
-                daysHTML += `<div class="p-2"></div>`;
+                daysHTML += '<div class="p-2"></div>';
             }
         }
 
         document.getElementById('calendar-days').innerHTML = daysHTML;
     }
 
-    function toggleActivity(day, activity) {
-        let dateKey = getDateKey(day);
-        data[dateKey] = data[dateKey] || {};
-        data[dateKey][activity] = !data[dateKey][activity];
-        saveData();
+    function getFoodClass(food) {
+        switch (food) {
+            case 'Bueno': return 'food-good';
+            case 'Mejorable': return 'food-improvable';
+            case 'Normal': return 'food-normal';
+            case 'Mal': return 'food-bad';
+            default: return '';
+        }
     }
 
-    function toggleWeight(day, checkbox) {
-        let dateKey = getDateKey(day);
-        data[dateKey] = data[dateKey] || {};
-        let input = checkbox.nextElementSibling;
-        input.hidden = !checkbox.checked;
-        checkbox.checked ? input.classList.remove('hidden-weight') : delete data[dateKey].weight;
-        saveData();
+    function getMonthName(monthIndex) {
+        const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        return months[monthIndex];
     }
 
-    function setWeight(day, input) {
-        let dateKey = getDateKey(day);
-        data[dateKey] = data[dateKey] || {};
-        data[dateKey].weight = input.value;
-        saveData();
+    function getDayName(dayIndex) {
+        const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        return days[dayIndex];
     }
 
-    function setFood(day, select) {
-        let dateKey = getDateKey(day);
-        data[dateKey] = data[dateKey] || {};
-        data[dateKey].food = select.value;
+    function getDateKey(year, month, day) {
+        return `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`;
+    }
+
+    function toggleActivity(dayNumber, activityType) {
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        let dateKey = getDateKey(year, month, dayNumber);
+        if (!data[dateKey]) data[dateKey] = {};
+
+        data[dateKey][activityType] = !data[dateKey][activityType];
         saveData();
         updateCalendar();
     }
 
-    function addSport(day, select) {
-        let sport = select.value;
+    function setWeight(dayNumber, inputElement) {
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        let dateKey = getDateKey(year, month, dayNumber);
+        if (!data[dateKey]) data[dateKey] = {};
+
+        data[dateKey].weight = inputElement.value;
+        saveData();
+    }
+
+    function setFood(dayNumber, selectElement) {
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        let dateKey = getDateKey(year, month, dayNumber);
+        if (!data[dateKey]) data[dateKey] = {};
+
+        data[dateKey].food = selectElement.value;
+        saveData();
+    }
+
+    function addSport(dayNumber, selectElement) {
+        let sport = selectElement.value;
         if (!sport) return;
 
-        let dateKey = getDateKey(day);
-        data[dateKey] = data[dateKey] || {};
-        data[dateKey].sports = data[dateKey].sports || [];
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        let dateKey = getDateKey(year, month, dayNumber);
+        if (!data[dateKey]) data[dateKey] = {};
 
+        if (!data[dateKey].sports) data[dateKey].sports = [];
         if (!data[dateKey].sports.includes(sport)) {
             data[dateKey].sports.push(sport);
-        } else {
-            data[dateKey].sports = data[dateKey].sports.filter(s => s !== sport);
         }
         saveData();
         updateCalendar();
     }
 
-    function removeSport(day, sport) {
-        let dateKey = getDateKey(day);
+    function renderSports(sports, dayNumber) {
+        return sports.map(sport => `
+            <span class="sport-badge" onclick="removeSport(${dayNumber}, '${sport}')">${sport} ❌</span>
+        `).join('');
+    }
+
+    function removeSport(dayNumber, sport) {
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1;
+        let dateKey = getDateKey(year, month, dayNumber);
+        if (!data[dateKey] || !data[dateKey].sports) return;
+
         data[dateKey].sports = data[dateKey].sports.filter(s => s !== sport);
         saveData();
         updateCalendar();
     }
 
-    function renderSports(sports, day) {
-        return sports.map(sport => `
-            <label>
-                <input type="checkbox" checked onchange="removeSport(${day}, '${sport}')"> ${sport}
-            </label>
-        `).join('');
+    function toggleView() {
+        if (currentView === 'calendar') {
+            currentView = 'summary';
+            document.getElementById('calendar-view').classList.add('hidden');
+            document.getElementById('summary-view').classList.remove('hidden');
+            showSummary();
+        } else {
+            currentView = 'calendar';
+            document.getElementById('calendar-view').classList.remove('hidden');
+            document.getElementById('summary-view').classList.add('hidden');
+        }
     }
 
-    function getDateKey(day) {
-        return `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${day}`;
-    }
+    function showSummary() {
+        let summaryHTML = '';
+        let totalDays = 0;
+        let totalGoodFood = 0;
+        let totalBadFood = 0;
+        let totalExercise = 0;
+        let totalCreatine = 0;
+        let totalSteps = 0;
 
-    function getFoodClass(food) {
-        if (food === 'Bueno') return 'food-good';
-        if (food === 'Mejorable') return 'food-improvable';
-        if (food === 'Normal') return 'food-normal';
-        if (food === 'Mal') return 'food-bad';
-        return '';
-    }
+        let month = currentDate.getMonth() + 1;
+        let year = currentDate.getFullYear();
 
-    function getDayName(day) {
-        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        return days[day];
-    }
+        for (let dateKey in data) {
+            let { food, exercise, creatine, steps } = data[dateKey];
+            let [recordYear, recordMonth] = dateKey.split('-');
+            if (parseInt(recordMonth) !== month) continue; // Solo contar del mes actual
 
-    function getMonthName(month) {
-        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        return months[month];
-    }
-
-    function updateSummary() {
-        let month = currentDate.getMonth();
-        let totalDays = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-        let activityCount = { exercise: 0, creatine: 0, steps: 0, food: { Bueno: 0, Mejorable: 0, Normal: 0, Mal: 0 }, sports: 0 };
-
-        for (let key in data) {
-            let [year, monthFromKey, day] = key.split('-');
-            if (parseInt(monthFromKey) === month + 1) {
-                let dayData = data[key];
-                activityCount.exercise += dayData.exercise ? 1 : 0;
-                activityCount.creatine += dayData.creatine ? 1 : 0;
-                activityCount.steps += dayData.steps ? 1 : 0;
-                if (dayData.food) activityCount.food[dayData.food]++;
-                if (dayData.sports && dayData.sports.length) activityCount.sports += 1;
-            }
+            totalDays++;
+            if (food === 'Bueno') totalGoodFood++;
+            if (food === 'Mal') totalBadFood++;
+            if (exercise) totalExercise++;
+            if (creatine) totalCreatine++;
+            if (steps) totalSteps++;
         }
 
-        let summaryHTML = `
-            <p>Gimnasio ${activityCount.exercise}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(activityCount.exercise / totalDays) * 100}%"></div></div>
-            <p>Creatina ${activityCount.creatine}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(activityCount.creatine / totalDays) * 100}%"></div></div>
-            <p>Meta pasos ${activityCount.steps}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(activityCount.steps / totalDays) * 100}%"></div></div>
-            <p>Comida Bueno ${activityCount.food.Bueno}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(activityCount.food.Bueno / totalDays) * 100}%"></div></div>
-            <p>Comida Mejorable ${activityCount.food.Mejorable}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-improvable" style="width: ${(activityCount.food.Mejorable / totalDays) * 100}%"></div></div>
-            <p>Comida Normal ${activityCount.food.Normal}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-normal" style="width: ${(activityCount.food.Normal / totalDays) * 100}%"></div></div>
-            <p>Comida Mal ${activityCount.food.Mal}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-bad" style="width: ${(activityCount.food.Mal / totalDays) * 100}%"></div></div>
-            <p>Deportes ${activityCount.sports}/${totalDays}</p>
-            <div class="stat-bar"><div class="stat-progress stat-sport" style="width: ${(activityCount.sports / totalDays) * 100}%"></div></div>
+        summaryHTML += `
+            <div>
+                <h3>Resumen</h3>
+                <p>Total días registrados: ${totalDays}</p>
+                <p>Comidas buenas: ${totalGoodFood}</p>
+                <p>Comidas malas: ${totalBadFood}</p>
+                <p>Ejercicios realizados: ${totalExercise}</p>
+                <p>Creatina tomada: ${totalCreatine}</p>
+                <p>Pasos cumplidos: ${totalSteps}</p>
+            </div>
         `;
-
         document.getElementById('summary-activities').innerHTML = summaryHTML;
     }
 
-    function toggleView() {
-        currentView = currentView === 'calendar' ? 'summary' : 'calendar';
-        document.getElementById('calendar-view').classList.toggle('hidden');
-        document.getElementById('summary-view').classList.toggle('hidden');
-        if (currentView === 'summary') {
-            updateSummary();
-        }
-    }
-
+    // Inicialización
     updateCalendar();
 </script>
 
