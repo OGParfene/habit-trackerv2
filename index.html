@@ -395,8 +395,8 @@
                     <input type="number" value="${checkedData.weight || ''}" class="w-full border rounded mt-1 hidden-weight" oninput="setWeight(${dayNumber}, this)" ${checkedData.weight ? '' : 'hidden'}>
                     <select onchange="setFood(${dayNumber}, this)" class="w-full border rounded mt-1 ${getFoodClass(checkedData.food)}">
                         <option ${!checkedData.food ? 'selected' : ''} value="">Comida</option>
-                        <option ${checkedData.food === 'Bien' ? 'selected' : ''} value="Bien">Muy Bien</option>
-                        <option ${checkedData.food === 'Mejorable' ? 'selected' : ''} value="Mejorable">Bien</option>
+                        <option ${checkedData.food === 'Perfecto' ? 'selected' : ''} value="Perfecto">Perfecto</option>
+                        <option ${checkedData.food === 'Bien' ? 'selected' : ''} value="Bien">Bien</option>
                         <option ${checkedData.food === 'Normal' ? 'selected' : ''} value="Normal">Normal</option>
                         <option ${checkedData.food === 'Mal' ? 'selected' : ''} value="Mal">Mal</option>
                     </select>
@@ -429,7 +429,7 @@
 
         function getFoodClass(food) {
             switch (food) {
-                case 'Muy bien': return 'food-good';
+                case 'Perfecto': return 'food-good';
                 case 'Bien': return 'food-improvable';
                 case 'Normal': return 'food-normal';
                 case 'Mal': return 'food-bad';
@@ -537,7 +537,7 @@
             let totalCreatine = 0;
             let totalSteps = 0;
             let daysRecorded = 0;
-            let meals = { Bien: 0, Mejorable: 0, Normal: 0, Mal: 0 };
+            let meals = { Perfecto: 0, Bien: 0, Normal: 0, Mal: 0 };
             let sports = {};
 
 
@@ -577,12 +577,12 @@
                 <p>Objetivo de pasos: ${totalSteps}</p>
                 <div class="stat-bar"><div class="stat-progress stat-bad" style="width: ${(totalSteps / totalDays) * 100 || 0}%;"></div></div>
                 <br>
-                <h2>Comidas registradas: ${meals.Bien + meals.Mal + meals.Normal + meals.Mejorable}</h2>
-                <p>Muy Bien: ${meals.Bien}</p>
-                <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(meals.Bien / totalDays) * 100 || 0}%;"></div></div>
+                <h2>Comidas registradas: ${meals.Perfecto + meals.Mal + meals.Normal + meals.Bien}</h2>
+                <p>Perfecto: ${meals.Perfecto}</p>
+                <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(meals.Perfecto / totalDays) * 100 || 0}%;"></div></div>
                 
-                <p>Bien: ${meals.Mejorable}</p>
-                <div class="stat-bar"><div class="stat-progress stat-steps" style="width: ${(meals.Mejorable / totalDays) * 100 || 0}%;"></div></div>
+                <p>Bien: ${meals.Bien}</p>
+                <div class="stat-bar"><div class="stat-progress stat-steps" style="width: ${(meals.Bien / totalDays) * 100 || 0}%;"></div></div>
                 
                 <p>Normal: ${meals.Normal}</p>
                 <div class="stat-bar"><div class="stat-progress stat-creatine" style="width: ${(meals.Normal / totalDays) * 100 || 0}%;"></div></div>
