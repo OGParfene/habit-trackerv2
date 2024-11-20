@@ -429,8 +429,8 @@
 
         function getFoodClass(food) {
             switch (food) {
-                case 'Bien': return 'food-good';
-                case 'Mejorable': return 'food-improvable';
+                case 'Muy bien': return 'food-good';
+                case 'Bien': return 'food-improvable';
                 case 'Normal': return 'food-normal';
                 case 'Mal': return 'food-bad';
                 default: return '';
@@ -578,10 +578,10 @@
                 <div class="stat-bar"><div class="stat-progress stat-bad" style="width: ${(totalSteps / totalDays) * 100 || 0}%;"></div></div>
                 <br>
                 <h2>Comidas registradas: ${meals.Bien + meals.Mal + meals.Normal + meals.Mejorable}</h2>
-                <p>Bien: ${meals.Bien}</p>
+                <p>Muy Bien: ${meals.Bien}</p>
                 <div class="stat-bar"><div class="stat-progress stat-good" style="width: ${(meals.Bien / totalDays) * 100 || 0}%;"></div></div>
                 
-                <p>Mejorable: ${meals.Mejorable}</p>
+                <p>Bien: ${meals.Mejorable}</p>
                 <div class="stat-bar"><div class="stat-progress stat-steps" style="width: ${(meals.Mejorable / totalDays) * 100 || 0}%;"></div></div>
                 
                 <p>Normal: ${meals.Normal}</p>
