@@ -395,8 +395,8 @@
                     <input type="number" value="${checkedData.weight || ''}" class="w-full border rounded mt-1 hidden-weight" oninput="setWeight(${dayNumber}, this)" ${checkedData.weight ? '' : 'hidden'}>
                     <select onchange="setFood(${dayNumber}, this)" class="w-full border rounded mt-1 ${getFoodClass(checkedData.food)}">
                         <option ${!checkedData.food ? 'selected' : ''} value="">Comida</option>
-                        <option ${checkedData.food === 'Muy Bien' ? 'selected' : ''} value="Muy Bien">Muy Bien</option>
-                        <option ${checkedData.food === 'Bien' ? 'selected' : ''} value="Bien">Bien</option>
+                        <option ${checkedData.food === 'Bien' ? 'selected' : ''} value="Bien">Muy Bien</option>
+                        <option ${checkedData.food === 'Mejorable' ? 'selected' : ''} value="Mejorable">Bien</option>
                         <option ${checkedData.food === 'Normal' ? 'selected' : ''} value="Normal">Normal</option>
                         <option ${checkedData.food === 'Mal' ? 'selected' : ''} value="Mal">Mal</option>
                     </select>
